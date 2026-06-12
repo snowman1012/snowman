@@ -46,6 +46,7 @@ let running = false;
 let paused = false;
 let speedMultiplier = 1;
 let winner = null;
+let audioContext = null;
 
 const loadedImages = {};
 
@@ -125,6 +126,7 @@ function makeFighter(characterId, index) {
 }
 
 function startBattle() {
+  ensureAudio();
   fighters = [makeFighter(selected[0], 0), makeFighter(selected[1], 1)];
   projectiles = [];
   effects = [];
@@ -206,6 +208,7 @@ function updateFighter(fighter, enemy, dt) {
 }
 
 function throwDung(fighter, enemy) {
+  playPooSound();
   const dx = enemy.x - fighter.x;
   const dy = enemy.y - fighter.y;
   const dist = Math.max(1, Math.hypot(dx, dy));
@@ -226,6 +229,7 @@ function throwDung(fighter, enemy) {
 }
 
 function swallow(fighter, enemy) {
+  playSwallowSound();
   enemy.swallowedTimer = 0.95;
   enemy.invulnerable = 1.1;
   fighter.spitTimer = 1.2;
@@ -243,6 +247,7 @@ function swallow(fighter, enemy) {
     enemy.vy = Math.sin(angle) * 620;
     damage(enemy, 50);
     effects.push({ kind: "burst", x: enemy.x, y: enemy.y, color: "#fff06a", life: 0.55, max: 0.55, radius: 20 });
+    playBurpSound();
     log(`${fighter.name}이 뱉어내며 50 피해`);
   }, 950 / speedMultiplier);
 }
@@ -597,6 +602,82 @@ function clamp(value, min, max) {
 
 function log(message) {
   logEl.textContent = message;
+}
+
+function ensureAudio() {
+  const AudioCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtor) return null;
+  if (!audioContext) audioContext = new AudioCtor();
+  if (audioContext.state === "suspended") audioContext.resume();
+  return audioContext;
+}
+
+function createGain(value, startTime, endTime) {
+  const audio = ensureAudio();
+  if (!audio) return null;
+  const gain = audio.createGain();
+  gain.gain.setValueAtTime(0.0001, startTime);
+  gain.gain.exponentialRampToValueAtTime(value, startTime + 0.025);
+  gain.gain.exponentialRampToValueAtTime(0.0001, endTime);
+  gain.connect(audio.destination);
+  return gain;
+}
+
+function playTone({ type = "sine", frequency = 220, endFrequency = frequency, start = 0, duration = 0.2, volume = 0.1 }) {
+  const audio = ensureAudio();
+  if (!audio) return;
+  const now = audio.currentTime + start;
+  const oscillator = audio.createOscillator();
+  const gain = createGain(volume, now, now + duration);
+  if (!gain) return;
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, now);
+  oscillator.frequency.exponentialRampToValueAtTime(Math.max(20, endFrequency), now + duration);
+  oscillator.connect(gain);
+  oscillator.start(now);
+  oscillator.stop(now + duration + 0.03);
+}
+
+function playNoise({ start = 0, duration = 0.16, volume = 0.08, lowpass = 900 }) {
+  const audio = ensureAudio();
+  if (!audio) return;
+  const now = audio.currentTime + start;
+  const buffer = audio.createBuffer(1, Math.ceil(audio.sampleRate * duration), audio.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i += 1) {
+    const fade = 1 - i / data.length;
+    data[i] = (Math.random() * 2 - 1) * fade;
+  }
+
+  const source = audio.createBufferSource();
+  const filter = audio.createBiquadFilter();
+  const gain = createGain(volume, now, now + duration);
+  if (!gain) return;
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(lowpass, now);
+  source.buffer = buffer;
+  source.connect(filter);
+  filter.connect(gain);
+  source.start(now);
+  source.stop(now + duration + 0.03);
+}
+
+function playPooSound() {
+  playNoise({ duration: 0.2, volume: 0.13, lowpass: 520 });
+  playTone({ type: "sawtooth", frequency: 110, endFrequency: 58, duration: 0.22, volume: 0.08 });
+  playTone({ type: "square", frequency: 72, endFrequency: 46, start: 0.08, duration: 0.12, volume: 0.045 });
+}
+
+function playSwallowSound() {
+  playTone({ type: "sine", frequency: 180, endFrequency: 72, duration: 0.24, volume: 0.1 });
+  playTone({ type: "triangle", frequency: 360, endFrequency: 130, start: 0.08, duration: 0.16, volume: 0.06 });
+  playNoise({ start: 0.04, duration: 0.13, volume: 0.045, lowpass: 740 });
+}
+
+function playBurpSound() {
+  playTone({ type: "sawtooth", frequency: 88, endFrequency: 46, duration: 0.42, volume: 0.14 });
+  playTone({ type: "triangle", frequency: 140, endFrequency: 62, start: 0.06, duration: 0.34, volume: 0.07 });
+  playNoise({ start: 0.03, duration: 0.28, volume: 0.075, lowpass: 430 });
 }
 
 renderSelectCards();
