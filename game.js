@@ -47,6 +47,7 @@ let paused = false;
 let speedMultiplier = 1;
 let winner = null;
 let audioContext = null;
+let battleToken = 0;
 
 const loadedImages = {};
 
@@ -117,7 +118,7 @@ function makeFighter(characterId, index) {
     vx: index === 0 ? character.speed * 0.78 : -character.speed * 0.72,
     vy: index === 0 ? -character.speed * 0.54 : character.speed * 0.48,
     hpNow: character.hp,
-    cooldownLeft: index === 0 ? 1.1 : 2.2,
+    cooldownLeft: character.cooldown,
     swallowedTimer: 0,
     spitTimer: 0,
     invulnerable: 0,
@@ -127,6 +128,8 @@ function makeFighter(characterId, index) {
 
 function startBattle() {
   ensureAudio();
+  battleToken += 1;
+  const token = battleToken;
   fighters = [makeFighter(selected[0], 0), makeFighter(selected[1], 1)];
   projectiles = [];
   effects = [];
@@ -138,17 +141,17 @@ function startBattle() {
   matchTitle.textContent = `${fighters[0].name} vs ${fighters[1].name}`;
   log(`${fighters[0].name}와 ${fighters[1].name} 전투 시작`);
   showScreen("battle");
-  requestAnimationFrame(loop);
+  requestAnimationFrame((now) => loop(now, token));
 }
 
-function loop(now) {
-  if (!running) return;
+function loop(now, token) {
+  if (!running || token !== battleToken) return;
   const rawDt = Math.min((now - lastFrame) / 1000, 0.04);
   lastFrame = now;
   if (!paused && !winner) update(rawDt * speedMultiplier);
   draw();
   renderHud();
-  requestAnimationFrame(loop);
+  requestAnimationFrame((nextNow) => loop(nextNow, token));
 }
 
 function update(dt) {
@@ -229,6 +232,7 @@ function throwDung(fighter, enemy) {
 }
 
 function swallow(fighter, enemy) {
+  const token = battleToken;
   playSwallowSound();
   enemy.swallowedTimer = 0.95;
   enemy.invulnerable = 1.1;
@@ -237,7 +241,7 @@ function swallow(fighter, enemy) {
   log(`${fighter.name}이 ${enemy.name}을 삼켰습니다`);
 
   setTimeout(() => {
-    if (!running || winner || enemy.hpNow <= 0) return;
+    if (!running || token !== battleToken || winner || enemy.hpNow <= 0) return;
     const angle = Math.atan2(enemy.y - fighter.y || 1, enemy.x - fighter.x || 1) + Math.PI * 0.15;
     enemy.swallowedTimer = 0;
     enemy.invulnerable = 0;
