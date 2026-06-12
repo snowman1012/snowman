@@ -143,6 +143,9 @@ function startBattle() {
   battleToken += 1;
   const token = battleToken;
   fighters = [makeFighter(selected[0], 0), makeFighter(selected[1], 1)];
+  fighters.forEach(fighter => {
+    fighter.cooldownLeft = fighter.cooldown;
+});
   projectiles = [];
   effects = [];
   winner = null;
