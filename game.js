@@ -108,15 +108,27 @@ function getImage(character) {
   return image;
 }
 
+function randomStartVelocity(character, index) {
+  const baseAngle = index === 0 ? -0.25 : Math.PI + 0.25;
+  const spread = Math.PI * 0.8;
+  const angle = baseAngle + (Math.random() - 0.5) * spread;
+  const speed = character.speed * (0.82 + Math.random() * 0.28);
+  return {
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+  };
+}
+
 function makeFighter(characterId, index) {
   const character = characters[characterId];
+  const velocity = randomStartVelocity(character, index);
   return {
     ...character,
     index,
     x: index === 0 ? 165 : canvas.width - 165,
     y: index === 0 ? canvas.height - 145 : 145,
-    vx: index === 0 ? character.speed * 0.78 : -character.speed * 0.72,
-    vy: index === 0 ? -character.speed * 0.54 : character.speed * 0.48,
+    vx: velocity.vx,
+    vy: velocity.vy,
     hpNow: character.hp,
     cooldownLeft: character.cooldown,
     swallowedTimer: 0,
