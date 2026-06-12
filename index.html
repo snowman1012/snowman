@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ballfight Arena</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main id="app">
+    <section class="screen screen-home active" data-screen="home">
+      <p class="eyebrow">AUTO BALL DUEL</p>
+      <h1>Ballfight Arena</h1>
+      <button class="primary-btn" data-go="mode">시작</button>
+    </section>
+
+    <section class="screen screen-mode" data-screen="mode">
+      <div class="panel narrow">
+        <div>
+          <p class="eyebrow">GAME MODE</p>
+          <h2>대전 방식</h2>
+        </div>
+        <button class="ghost-btn" data-go="home">뒤로</button>
+      </div>
+      <div class="mode-grid">
+        <button class="mode-card selected" data-go="select">
+          <strong>1vs1</strong>
+          <span>두 캐릭터가 마지막까지 결투</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="screen screen-select" data-screen="select">
+      <div class="panel wide">
+        <div>
+          <p class="eyebrow">CHARACTER SELECT</p>
+          <h2>캐릭터 선택</h2>
+        </div>
+        <button class="ghost-btn" data-go="mode">뒤로</button>
+      </div>
+
+      <div class="select-layout">
+        <div class="slot">
+          <h3>캐릭터 1</h3>
+          <div class="character-list" data-slot="0"></div>
+        </div>
+        <div class="slot">
+          <h3>캐릭터 2</h3>
+          <div class="character-list" data-slot="1"></div>
+        </div>
+      </div>
+
+      <div class="select-actions">
+        <button class="primary-btn" id="startBattle">전투 시작</button>
+      </div>
+    </section>
+
+    <section class="screen screen-battle" data-screen="battle">
+      <div class="battle-top panel wide">
+        <div>
+          <p class="eyebrow">BATTLE</p>
+          <h2 id="matchTitle">한건희 vs 강승민</h2>
+        </div>
+        <div class="battle-actions">
+          <button class="speed-btn active" data-speed="1">1배</button>
+          <button class="speed-btn" data-speed="2">2배</button>
+          <button class="speed-btn" data-speed="4">4배</button>
+          <button class="ghost-btn" id="pauseBtn">중단</button>
+          <button class="ghost-btn" id="restartBtn">다시하기</button>
+          <button class="ghost-btn" data-go="select">선택으로</button>
+        </div>
+      </div>
+
+      <canvas id="arena" width="720" height="560" aria-label="전투 경기장"></canvas>
+      <div class="hud">
+        <article class="fighter-card" id="card0"></article>
+        <article class="fighter-card" id="card1"></article>
+      </div>
+      <div class="log" id="battleLog" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script src="./game.js"></script>
+</body>
+</html>
